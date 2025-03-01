@@ -2283,7 +2283,6 @@ function main
     set_proxy_vh
     restart_lsws
     after_install_display
-    main_ols_test
 }
 
 while [ ! -z "${1}" ] ; do
