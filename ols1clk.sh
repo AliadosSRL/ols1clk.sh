@@ -2244,6 +2244,84 @@ function after_install_display
     echo
 }
 
+function test_page
+{
+    local URL=$1
+    local KEYWORD=$2
+    local PAGENAME=$3
+    curl -skL  $URL | grep -i "$KEYWORD" >/dev/null 2>&1
+    if [ $? != 0 ] ; then
+        echoR "Error: $PAGENAME failed."
+        TESTGETERROR=yes
+    else
+        echoG "OK: $PAGENAME passed."
+    fi
+}
+
+function test_ols_admin
+{
+    test_page https://localhost:${ADMINPORT}/ "LiteSpeed WebAdmin" "test webAdmin page"
+}
+
+function test_ols
+{
+    if [ ${PROXY} = 0 ]; then
+        test_page http://localhost:$WPPORT/  Congratulation "test Example HTTP vhost page"
+        test_page https://localhost:$SSLWPPORT/  Congratulation "test Example HTTPS vhost page"
+    else
+        echoG 'Proxy is on, skip the test!'
+    fi    
+}
+
+function test_wordpress
+{
+    if [ ${PROXY} = 0 ]; then
+        test_page http://localhost:8088/  Congratulation "test Example vhost page"
+    else
+        echoG 'Proxy is on, skip the test!'
+    fi      
+    test_page http://localhost:$WPPORT/ "WordPress" "test wordpress HTTP first page"
+    test_page https://localhost:$SSLWPPORT/ "WordPress" "test wordpress HTTPS first page"
+}
+
+function test_wordpress_plus
+{
+    if [ ${PROXY} = 0 ]; then
+        test_page http://localhost:8088/  Congratulation "test Example vhost page"
+    else
+        echoG 'Proxy is on, skip the test!'
+    fi        
+    test_page "http://$SITEDOMAIN:$WPPORT/ --resolve $SITEDOMAIN:$WPPORT:127.0.0.1" WordPress "test wordpress HTTP first page"
+    test_page "https://$SITEDOMAIN:$SSLWPPORT/ --resolve $SITEDOMAIN:$SSLWPPORT:127.0.0.1" WordPress "test wordpress HTTPS first page"
+}
+
+
+function main_ols_test
+{
+    echoCYAN "Start auto testing >> >> >> >>"
+    test_ols_admin
+    if [ "${PURE_DB}" = '1' ] || [ "${PURE_MYSQL}" = '1' ] || [ "${PURE_PERCONA}" = '1' ] ; then 
+        test_ols
+    elif [ "$INSTALLWORDPRESS" = "1" ] ; then
+        if [ "$INSTALLWORDPRESSPLUS" = "1" ] ; then
+            test_wordpress_plus
+        else
+            test_wordpress
+        fi
+    else
+        test_wordpress
+    fi
+
+    if [ "${TESTGETERROR}" = "yes" ] ; then
+        echoG "Errors were encountered during testing. In many cases these errors can be solved manually by referring to installation logs."
+        echoG "Service loading issues can sometimes be resolved by performing a restart of the web server."
+        echoG "Reinstalling the web server can also help if neither of the above approaches resolve the issue."
+    fi
+
+    echoCYAN "End auto testing << << << <<"
+    echoG 'Thanks for using OpenLiteSpeed One click installation!'
+    echo
+}
 
 function main_init_check
 {
